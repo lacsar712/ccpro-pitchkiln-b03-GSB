@@ -1,0 +1,24 @@
+<div id="floor-board"
+     class="floor-board"
+     hx-get="{% url 'floor_grid' %}{% if active_phase %}?phase={{ active_phase }}{% endif %}"
+     hx-trigger="floor-refresh from:body"
+     hx-swap="outerHTML">
+  <div class="phase-legend">
+    <a class="leg leg-all {% if not active_phase %}on{% endif %}"
+       href="/"
+       hx-get="{% url 'floor_grid' %}"
+       hx-target="#floor-board"
+       hx-swap="outerHTML"
+       hx-push-url="/">全部</a>
+    {% for key, label, count in phase_legend %}
+    <a class="leg phase-{{ key }} {% if active_phase == key %}on{% endif %}"
+       href="/?phase={{ key }}"
+       hx-get="{% url 'floor_grid' %}?phase={{ key }}"
+       hx-target="#floor-board"
+       hx-swap="outerHTML"
+       hx-push-url="/?phase={{ key }}"><i></i>{{ label }} <b>{{ count }}</b></a>
+    {% endfor %}
+  </div>
+
+  {% include "floor/_grid.html" %}
+</div>

@@ -1,8 +1,4 @@
-<div id="floor-grid"
-     class="floor-grid"
-     hx-get="{% url 'floor_grid' %}"
-     hx-trigger="floor-refresh from:body"
-     hx-swap="outerHTML">
+<div id="floor-grid" class="floor-grid">
   {% for lane, tiles in lanes %}
   <div class="lane-row">
     <div class="lane-label">过道 {{ lane }}</div>
@@ -21,6 +17,9 @@
         {% if open %}
         <span class="tile-temp mono">目标 {{ open.targetSoftPointC }}℃</span>
         <span class="tile-lot">{{ open.resinLot.lotCode }}</span>
+        {% if h.board_latest_qualifying %}
+        <span class="tile-ok">可出胶 · {{ h.board_latest_qualifying.softPointC }}℃</span>
+        {% endif %}
         {% else %}
         <span class="tile-temp mono muted">无开灶</span>
         {% endif %}
@@ -30,6 +29,6 @@
     </div>
   </div>
   {% empty %}
-  <p class="board-empty">暂无灶台，请先种子数据</p>
+  <p class="board-empty">该相位下暂无灶台</p>
   {% endfor %}
 </div>

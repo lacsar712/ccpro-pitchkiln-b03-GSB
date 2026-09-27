@@ -2,7 +2,10 @@ from django import forms
 from django.utils import timezone
 
 from .models import CookRun, FireHearth, ResinLot, SoftPointProbe
-from .services.floor_rules import assert_can_enter_drawing
+from .services.floor_rules import (
+    assert_can_enter_drawing,
+    validate_soft_point,
+)
 
 
 class ResinLotForm(forms.ModelForm):
@@ -73,6 +76,10 @@ class SoftPointProbeForm(forms.ModelForm):
         ]
         if not self.is_bound and not (self.instance and self.instance.pk):
             self.initial["sampledAt"] = timezone.localtime().strftime("%Y-%m-%dT%H:%M")
+
+    def clean_softPointC(self):
+        """与服务层 record_probe 走同一校验，非法值文案一致。"""
+        return validate_soft_point(self.cleaned_data.get("softPointC"))
 
 
 class OpenCookRunForm(forms.ModelForm):

@@ -288,7 +288,16 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
+  text-decoration: none;
+  color: var(--steel);
+  padding: 0.1rem 0.45rem;
+  border: 1px solid transparent;
+  border-radius: 2px;
 }
+
+.leg:hover { color: var(--ink); border-color: #3f342a; }
+.leg.on { color: var(--cinder); border-color: var(--ember-dim); background: rgba(232, 121, 12, 0.08); }
+.leg b { color: var(--ink); font-weight: 700; }
 
 .leg i {
   width: 10px;
@@ -382,6 +391,15 @@ body {
 .tile-grade { font-size: 0.78rem; color: var(--steel); }
 .tile-temp { font-size: 0.85rem; margin-top: 0.25rem; }
 .tile-lot { font-size: 0.68rem; color: var(--steel); word-break: break-all; }
+.tile-ok {
+  font-size: 0.7rem;
+  color: var(--ok);
+  margin-top: 0.15rem;
+}
+
+.qualify { font-size: 0.78rem; margin: 0.3rem 0 0.5rem; }
+.qualify.ok { color: var(--ok); }
+.qualify.hot { color: var(--danger); }
 
 .board-empty { color: var(--steel); }
 

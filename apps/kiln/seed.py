@@ -3,7 +3,8 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from .models import CookRun, FireHearth, ResinLot, SoftPointProbe
+from .models import CookRun, FireHearth, ResinLot
+from .services.floor_rules import record_probe
 
 
 def ensure_seed_data():
@@ -78,16 +79,17 @@ def ensure_seed_data():
         closedAt=None,
         targetSoftPointC=Decimal("88.00"),
     )
-    SoftPointProbe.objects.create(
+    # 保温灶：已有合格探针（≤95），随时可切入出胶
+    record_probe(
         run=run1,
         sampledAt=now - timezone.timedelta(hours=3),
         softPointC=Decimal("102.40"),
         samplerName="值守周磊",
     )
-    SoftPointProbe.objects.create(
+    record_probe(
         run=run1,
         sampledAt=now - timezone.timedelta(hours=1),
-        softPointC=Decimal("96.20"),
+        softPointC=Decimal("94.80"),
         samplerName="值守周磊",
     )
 
@@ -98,10 +100,11 @@ def ensure_seed_data():
         closedAt=None,
         targetSoftPointC=Decimal("90.00"),
     )
-    SoftPointProbe.objects.create(
+    # 全板唯一缺合格探针的进行中值守：最新探针 96.20℃ 仍高于 95
+    record_probe(
         run=run2,
         sampledAt=now - timezone.timedelta(hours=1, minutes=20),
-        softPointC=Decimal("108.00"),
+        softPointC=Decimal("96.20"),
         samplerName="值守阿坤",
     )
 
@@ -112,23 +115,31 @@ def ensure_seed_data():
         closedAt=None,
         targetSoftPointC=Decimal("86.00"),
     )
-    SoftPointProbe.objects.create(
+    # 已在出胶：最新合格读数 93.50℃
+    record_probe(
         run=run3,
         sampledAt=now - timezone.timedelta(hours=6),
         softPointC=Decimal("99.10"),
         samplerName="值守阿萍",
     )
-    SoftPointProbe.objects.create(
+    record_probe(
         run=run3,
         sampledAt=now - timezone.timedelta(hours=2),
         softPointC=Decimal("93.50"),
         samplerName="值守阿萍",
     )
 
-    CookRun.objects.create(
+    run5 = CookRun.objects.create(
         hearth=h5,
         resinLot=lot_a,
         openedAt=now - timezone.timedelta(minutes=40),
         closedAt=None,
         targetSoftPointC=Decimal("87.00"),
+    )
+    # 新装料灶首测即合格，不缺探针资格
+    record_probe(
+        run=run5,
+        sampledAt=now - timezone.timedelta(minutes=10),
+        softPointC=Decimal("90.00"),
+        samplerName="值守夜林",
     )
