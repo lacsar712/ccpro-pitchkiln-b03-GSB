@@ -31,13 +31,13 @@
     <h3>软化点探针时间线</h3>
     <ol class="probe-timeline">
       {% for p in probes %}
-      <li class="{% if p.softPointC <= 95 %}ok{% else %}hot{% endif %}">
+      <li class="{% if p.drawing_qualified %}ok{% else %}hot{% endif %}">
         <span class="mono temp">{{ p.softPointC }}℃</span>
         <span class="when">{{ p.sampledAt|date:"m-d H:i" }}</span>
         <span class="who">{{ p.samplerName }}</span>
       </li>
       {% empty %}
-      <li class="empty">尚无探针 — 出胶前须有 ≤95℃ 记录</li>
+      <li class="empty">尚无探针 — 出胶前须有 ≤{{ drawing_max }}℃ 记录</li>
       {% endfor %}
     </ol>
   </section>
@@ -72,7 +72,7 @@
 
   <section class="drawer-block">
     <h3>切换相位</h3>
-    <p class="hint">进入「出胶」须当前值守至少一条探针 ≤95℃。</p>
+    <p class="hint">进入「出胶」须当前值守至少一条探针 ≤{{ drawing_max }}℃。</p>
     <form method="post" action="{% url 'change_phase' hearth.pk %}"
           class="stack-form"
           hx-post="{% url 'change_phase' hearth.pk %}"

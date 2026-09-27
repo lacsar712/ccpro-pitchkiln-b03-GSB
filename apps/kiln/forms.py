@@ -1,8 +1,9 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from .models import CookRun, FireHearth, ResinLot, SoftPointProbe
-from .services.floor_rules import assert_can_enter_drawing
+from .services.floor_rules import assert_can_enter_drawing, validate_soft_point
 
 
 class ResinLotForm(forms.ModelForm):
@@ -47,7 +48,11 @@ class PhaseChangeForm(forms.Form):
     def clean_phase(self):
         phase = self.cleaned_data["phase"]
         if self.hearth is not None and phase == FireHearth.PHASE_DRAWING:
-            assert_can_enter_drawing(self.hearth)
+            try:
+                assert_can_enter_drawing(self.hearth)
+            except ValidationError as exc:
+                # 服务层抛的是按字段分组的错误，这里摊平成相位字段错误。
+                raise forms.ValidationError(exc.messages)
         return phase
 
 
@@ -73,6 +78,12 @@ class SoftPointProbeForm(forms.ModelForm):
         ]
         if not self.is_bound and not (self.instance and self.instance.pk):
             self.initial["sampledAt"] = timezone.localtime().strftime("%Y-%m-%dT%H:%M")
+
+    def clean_softPointC(self):
+        # 与服务层 register_probe 共用同一校验，拒绝文案一致。
+        value = self.cleaned_data["softPointC"]
+        validate_soft_point(value)
+        return value
 
 
 class OpenCookRunForm(forms.ModelForm):

@@ -1,5 +1,10 @@
 from django.db import models
 
+from apps.kiln.services.floor_rules import (
+    is_drawing_qualified,
+    validate_soft_point,
+)
+
 
 class ResinLot(models.Model):
     lotCode = models.CharField("来脂批号", max_length=64, unique=True)
@@ -97,7 +102,12 @@ class SoftPointProbe(models.Model):
         verbose_name="值守",
     )
     sampledAt = models.DateTimeField("取样时间")
-    softPointC = models.DecimalField("软化点(℃)", max_digits=6, decimal_places=2)
+    softPointC = models.DecimalField(
+        "软化点(℃)",
+        max_digits=6,
+        decimal_places=2,
+        validators=[validate_soft_point],
+    )
     samplerName = models.CharField("取样人", max_length=80)
 
     class Meta:
@@ -107,3 +117,8 @@ class SoftPointProbe(models.Model):
 
     def __str__(self):
         return f"{self.softPointC}℃ by {self.samplerName}"
+
+    @property
+    def drawing_qualified(self):
+        """是否计入出胶资格；与 floor_rules.qualified_probes 同源。"""
+        return is_drawing_qualified(self)

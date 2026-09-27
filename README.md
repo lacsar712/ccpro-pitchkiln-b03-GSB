@@ -55,7 +55,14 @@ python manage.py runserver 0.0.0.0:4710
 3. **CookRun（熬制值守）**：归属灶台与来脂批、`openedAt`、`closedAt`（可空）、`targetSoftPointC`
 4. **SoftPointProbe（软化点探针）**：归属值守、`sampledAt`、`softPointC`、`samplerName`
 
-**业务规则**：将灶台相位切到 `drawing`（出胶）时，进行中的 CookRun 必须至少有一条 SoftPointProbe 的 `softPointC ≤ 95`。逻辑在 `apps/kiln/services/floor_rules.py`，由相位切换入口调用。
+**业务规则**（唯一事实来源：`apps/kiln/services/floor_rules.py`）：
+
+1. **软化点合法性**：`softPointC` 须为 **正数且 ≤ 120℃**，校验函数为 `validate_soft_point`。非法值在两条写路径上以**同一中文文案**拒绝（「软化点须为正数且不超过 120℃。」）：
+   - **写路径一 · 抽屉表单**：`SoftPointProbeForm.clean_softPointC`（`add_probe` 视图）；
+   - **写路径二 · 服务层保存**：`floor_rules.register_probe`（视图与任何脚本/后台调用都走它）。
+   模型字段同时挂同一 validator，只改表单而不改服务层（或反之）都算未修到位。
+2. **出胶资格**：相位切到 `drawing`（出胶）时，进行中的 CookRun 须至少一条**合格探针**——合法且 `softPointC ≤ 95`（`qualified_probes` / `assert_can_enter_drawing`）。抽屉时间线的 ok/hot 着色（`SoftPointProbe.drawing_qualified`）与改相位读取的最新合格探针（`latest_qualified_probe`）来自同一条规则与同一排序，写入探针后立刻反映，不会与时间线分叉。
+3. **图例计数**：看板图例按相位实时计数，「出胶」数只含相位已是 `drawing` 的灶，与网格中出胶瓦片复算一致。
 
 ## 界面
 
@@ -68,7 +75,7 @@ python manage.py runserver 0.0.0.0:4710
 python manage.py seed_data
 ```
 
-幂等：已有灶台则只保证账号存在。样例地名仅用「松脂坳 / 桐油坑」系。
+幂等：已有灶台则只保证账号存在。样例地名仅用「松脂坳 / 桐油坑」系。其中「坳火-甲」（保温中）故意缺合格探针（两条探针均 > 95℃），用于演示出胶资格的拒绝路径。
 
 ## 目录结构
 

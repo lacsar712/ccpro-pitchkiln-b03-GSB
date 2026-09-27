@@ -10,7 +10,11 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from .forms import OpenCookRunForm, PhaseChangeForm, ResinLotForm, SoftPointProbeForm
 from .models import CookRun, FireHearth, ResinLot
-from .services.floor_rules import change_hearth_phase
+from .services.floor_rules import (
+    DRAWING_SOFT_POINT_MAX,
+    change_hearth_phase,
+    register_probe,
+)
 
 
 def _wants_htmx(request):
@@ -45,17 +49,20 @@ def _board_context():
     }
 
 
-def _drawer_context(hearth):
+def _drawer_context(hearth, probe_form=None):
     open_run = hearth.open_run()
     probes = []
     if open_run:
         probes = list(open_run.probes.order_by("-sampledAt", "-id"))
+    if probe_form is None:
+        probe_form = SoftPointProbeForm() if open_run else None
     return {
         "hearth": hearth,
         "open_run": open_run,
         "probes": probes,
+        "drawing_max": DRAWING_SOFT_POINT_MAX,
         "phase_form": PhaseChangeForm(hearth=hearth),
-        "probe_form": SoftPointProbeForm() if open_run else None,
+        "probe_form": probe_form,
         "open_run_form": OpenCookRunForm(hearth=hearth) if open_run is None else None,
     }
 
@@ -128,15 +135,22 @@ def add_probe(request, pk):
 
     form = SoftPointProbeForm(request.POST)
     if form.is_valid():
-        probe = form.save(commit=False)
-        probe.run = open_run
-        probe.save()
-        messages.success(request, f"已登记探针 {probe.softPointC}℃")
+        try:
+            # 服务层保存与表单共用同一软化点校验。
+            probe = register_probe(open_run, **form.cleaned_data)
+            messages.success(request, f"已登记探针 {probe.softPointC}℃")
+            form = None  # 成功后抽屉里换空白表单
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0] if exc.messages else str(exc))
     else:
-        messages.error(request, "探针登记失败，请检查输入")
+        for errs in form.errors.values():
+            for e in errs:
+                messages.error(request, e)
 
     if _wants_htmx(request):
-        resp = render(request, "floor/_drawer.html", _drawer_context(hearth))
+        resp = render(
+            request, "floor/_drawer.html", _drawer_context(hearth, probe_form=form)
+        )
         resp["HX-Trigger"] = "floor-refresh"
         return resp
     return redirect(f"/?hearth={pk}")

@@ -71,6 +71,8 @@ def ensure_seed_data():
         phase=FireHearth.PHASE_CHARGING,
     )
 
+    # 坳火-甲：保温中，两条探针均 > 95℃ —— 故意缺合格探针，
+    # 用于演示「无合格探针不得进入出胶」的拒绝路径。
     run1 = CookRun.objects.create(
         hearth=h1,
         resinLot=lot_a,
